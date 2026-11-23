@@ -1,0 +1,48 @@
+name: Build KidShield Pro APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build Debug APK
+        run: |
+          if [ -f "settings.gradle.kts" ]; then
+            PROJECT_DIR="."
+          elif [ -f "KidShieldPro/settings.gradle.kts" ]; then
+            PROJECT_DIR="KidShieldPro"
+          else
+            echo "Error: settings.gradle.kts not found!"
+            exit 1
+          fi
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --stacktrace
+          mkdir -p "$GITHUB_WORKSPACE/release_output"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/release_output/KidShieldPro-v1.0.apk"
+
+      - name: Upload KidShield Pro APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KidShieldPro-APK
+          path: release_output/KidShieldPro-v1.0.apk
+          retention-days: 30
