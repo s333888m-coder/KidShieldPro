@@ -56,6 +56,7 @@ import com.kidshield.pro.ui.theme.TextSecondary
 fun SettingsScreen(
     afterTimerMinutes: Int,
     antiUninstallGuard: Boolean,
+    autoForceStopEnabled: Boolean,
     hasOverlayPermission: Boolean,
     hasAccessibilityPermission: Boolean,
     hasDeviceAdminPermission: Boolean,
@@ -63,6 +64,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onSelectAfterTimerMinutes: (Int) -> Unit,
     onToggleAntiUninstallGuard: (Boolean) -> Unit,
+    onToggleAutoForceStop: (Boolean) -> Unit,
     onRequestOverlay: () -> Unit,
     onRequestAccessibility: () -> Unit,
     onRequestDeviceAdmin: () -> Unit,
@@ -93,7 +95,7 @@ fun SettingsScreen(
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "आफ्टर-टाइमर और डिवाइस एडमिन सेटिंग्स",
+                    text = "आफ्टर-टाइमर, फोर्स-स्टॉप और डिवाइस एडमिन",
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
@@ -159,7 +161,44 @@ fun SettingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Auto Force-Stop Toggle
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(CardSurface)
+                .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(20.dp))
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Auto Force-Stop App (YouTube)",
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "टाइमर खत्म होते ही Accessibility के ज़रिए YouTube को पूरी तरह Force Stop कर देगा (ऑडियो/वीडियो बंद)",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Switch(
+                checked = autoForceStopEnabled,
+                onCheckedChange = onToggleAutoForceStop,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MidnightBg,
+                    checkedTrackColor = CyanAccent
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Anti-Uninstall Guard Switch
         Row(
@@ -185,6 +224,7 @@ fun SettingsScreen(
                     fontSize = 12.sp
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
             Switch(
                 checked = antiUninstallGuard,
                 onCheckedChange = onToggleAntiUninstallGuard,
@@ -208,7 +248,7 @@ fun SettingsScreen(
         PermissionCard(
             icon = Icons.Rounded.Layers,
             title = "Display Over Other Apps (Overlay)",
-            subtitle = "YouTube के ऊपर Fake PIN लॉक स्क्रीन दिखाने के लिए अनिवार्य",
+            subtitle = "YouTube के ऊपर 100% Solid Fake PIN लॉक दिखाने के लिए अनिवार्य",
             granted = hasOverlayPermission,
             onClick = onRequestOverlay
         )
@@ -217,8 +257,8 @@ fun SettingsScreen(
 
         PermissionCard(
             icon = Icons.Rounded.Security,
-            title = "Accessibility Service (Lock Guard)",
-            subtitle = "टाइमर के बाद YouTube बंद करने और अनइंस्टॉल रोकने के लिए",
+            title = "Accessibility Service (Lock & Force-Stop)",
+            subtitle = "टाइमर के बाद YouTube को Force Stop करने और अनइंस्टॉल रोकने के लिए",
             granted = hasAccessibilityPermission,
             onClick = onRequestAccessibility
         )

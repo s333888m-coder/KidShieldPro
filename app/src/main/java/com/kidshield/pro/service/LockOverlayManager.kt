@@ -41,7 +41,7 @@ object LockOverlayManager {
         }
     }
 
-    fun isOverlayShowing(): Boolean = overlayView != null
+    fun isOverlayShowing(): Boolean = overlayView != null && overlayView?.visibility == View.VISIBLE
 
     fun showFakePinOverlay(context: Context) {
         mainHandler.post {
@@ -63,6 +63,7 @@ object LockOverlayManager {
 
             @Suppress("DEPRECATION")
             val flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 WindowManager.LayoutParams.FLAG_FULLSCREEN or
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
@@ -73,7 +74,7 @@ object LockOverlayManager {
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 flags,
-                PixelFormat.TRANSLUCENT
+                PixelFormat.OPAQUE
             ).apply {
                 gravity = Gravity.CENTER
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -81,6 +82,16 @@ object LockOverlayManager {
                         WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
                 }
             }
+
+            @Suppress("DEPRECATION")
+            view.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                )
 
             setupKeypadLogic(appCtx, view)
             overlayView = view

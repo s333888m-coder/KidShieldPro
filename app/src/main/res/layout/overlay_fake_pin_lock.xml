@@ -3,7 +3,7 @@
     android:id="@+id/overlay_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5070B14"
+    android:background="#FF070B14"
     android:gravity="center_horizontal"
     android:orientation="vertical"
     android:paddingHorizontal="28dp"

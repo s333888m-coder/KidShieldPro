@@ -31,6 +31,8 @@ class PrefsManager(context: Context) {
         private const val KEY_LOCK_ENFORCED = "lock_enforced"
         private const val KEY_PROTECTION_END_MS = "protection_end_ms" // -1L means Until Parent Fingerprint
         private const val KEY_ANTI_UNINSTALL_GUARD = "anti_uninstall_guard"
+        private const val KEY_AUTO_FORCE_STOP = "auto_force_stop_enabled"
+        private const val KEY_SAVED_MEDIA_VOLUME = "saved_media_volume"
 
         const val AFTER_TIMER_UNTIL_FP = -1
     }
@@ -38,7 +40,6 @@ class PrefsManager(context: Context) {
     fun getMonitoredApps(): List<MonitoredApp> {
         val raw = prefs.getString(KEY_MONITORED_APPS, null)
         if (raw.isNullOrBlank()) {
-            // Default persistent app: YouTube
             val defaultList = listOf(
                 MonitoredApp("com.google.android.youtube", "YouTube")
             )
@@ -105,10 +106,6 @@ class PrefsManager(context: Context) {
         get() = prefs.getInt(KEY_TIMER_SECONDS, 0)
         set(value) = prefs.edit().putInt(KEY_TIMER_SECONDS, value).apply()
 
-    /**
-     * Duration (in minutes) to enforce Fake PIN Lock after timer expires.
-     * Options: 15, 30, 60, 120, or AFTER_TIMER_UNTIL_FP (-1)
-     */
     var afterTimerProtectionMinutes: Int
         get() = prefs.getInt(KEY_AFTER_TIMER_MINUTES, 30)
         set(value) = prefs.edit().putInt(KEY_AFTER_TIMER_MINUTES, value).apply()
@@ -125,6 +122,14 @@ class PrefsManager(context: Context) {
     var isAntiUninstallGuardEnabled: Boolean
         get() = prefs.getBoolean(KEY_ANTI_UNINSTALL_GUARD, true)
         set(value) = prefs.edit().putBoolean(KEY_ANTI_UNINSTALL_GUARD, value).apply()
+
+    var isAutoForceStopEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_FORCE_STOP, true)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_FORCE_STOP, value).apply()
+
+    var savedMediaVolume: Int
+        get() = prefs.getInt(KEY_SAVED_MEDIA_VOLUME, -1)
+        set(value) = prefs.edit().putInt(KEY_SAVED_MEDIA_VOLUME, value).apply()
 
     var isSessionActive: Boolean
         get() = prefs.getBoolean(KEY_SESSION_ACTIVE, false)
@@ -145,7 +150,7 @@ class PrefsManager(context: Context) {
     fun isProtectionCurrentlyActive(): Boolean {
         if (!isLockEnforced) return false
         val endMs = protectionEndMillis
-        if (endMs == -1L) return true // Until Parent Fingerprint
+        if (endMs == -1L) return true
         return System.currentTimeMillis() < endMs
     }
 

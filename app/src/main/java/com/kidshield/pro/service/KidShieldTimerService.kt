@@ -1,5 +1,6 @@
 package com.kidshield.pro.service
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -15,6 +16,7 @@ import androidx.core.app.NotificationCompat
 import com.kidshield.pro.KidShieldApp
 import com.kidshield.pro.R
 import com.kidshield.pro.data.PrefsManager
+import com.kidshield.pro.security.MediaControlManager
 import com.kidshield.pro.security.SoundAlertManager
 import com.kidshield.pro.ui.MainActivity
 import java.util.Locale
@@ -77,10 +79,11 @@ class KidShieldTimerService : Service() {
             } else if (prefs.isLockEnforced) {
                 val endMs = prefs.protectionEndMillis
                 if (endMs != -1L && now >= endMs) {
-                    // Configured after-timer duration has completed
                     completeAndStopService()
                 } else {
-                    if (!LockOverlayManager.isOverlayShowing()) {
+                    if (!LockOverlayManager.isOverlayShowing() &&
+                        !KidShieldAccessibilityService.isAutoForceStopRunning()
+                    ) {
                         LockOverlayManager.showFakePinOverlay(this@KidShieldTimerService)
                     }
                     val statusText = if (endMs == -1L) {
@@ -118,6 +121,7 @@ class KidShieldTimerService : Service() {
             ACTION_RESUME_PROTECTION -> {
                 startForegroundSafe("KidShield Pro Protection Active")
                 if (prefs.isProtectionCurrentlyActive()) {
+                    MediaControlManager.silenceAndStopMedia(this)
                     LockOverlayManager.showFakePinOverlay(this)
                     handler.removeCallbacks(ticker)
                     handler.post(ticker)
@@ -145,23 +149,59 @@ class KidShieldTimerService : Service() {
             System.currentTimeMillis() + (afterMinutes * 60_000L)
         }
 
-        // 1. Play Parent's Custom Alert Sound
-        SoundAlertManager.playAlertSound(this)
+        // STEP 1: Immediately pause & silence YouTube BEFORE exiting (prevents PiP minimize & background audio!)
+        MediaControlManager.silenceAndStopMedia(this)
 
-        // 2. Exit YouTube / current kids app to Home if Accessibility is running
-        KidShieldAccessibilityService.instance?.performHomeAction()
-
-        // 3. Immediately display Fake PIN Lock Overlay across the entire screen
+        // STEP 2: Immediately display 100% solid opaque Fake PIN Lock Overlay
         LockOverlayManager.showFakePinOverlay(this)
 
+        // STEP 3: Play Parent's Custom Alert Sound (uses USAGE_ALARM, unaffected by media mute)
+        SoundAlertManager.playAlertSound(this)
+
+        // STEP 4: Wait 250ms so YouTube processes PAUSE, then exit cleanly to Home
+        handler.postDelayed({
+            val accessibility = KidShieldAccessibilityService.instance
+            if (accessibility != null) {
+                accessibility.performHomeAction()
+            } else {
+                val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(homeIntent)
+            }
+        }, 250L)
+
+        // STEP 5: Kill background processes of monitored apps & trigger Auto Force-Stop if enabled
+        handler.postDelayed({
+            killMonitoredBackgroundProcesses()
+            val accessibility = KidShieldAccessibilityService.instance
+            if (prefs.isAutoForceStopEnabled && accessibility != null) {
+                accessibility.startAutoForceStop(prefs.selectedLaunchPackage)
+            }
+        }, 600L)
+
         handler.removeCallbacks(ticker)
-        handler.post(ticker)
+        handler.postDelayed(ticker, 1000L)
+    }
+
+    private fun killMonitoredBackgroundProcesses() {
+        try {
+            val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val packages = prefs.getMonitoredApps().map { it.packageName }.toMutableSet()
+            packages.add(prefs.selectedLaunchPackage)
+            packages.forEach { pkg ->
+                am.killBackgroundProcesses(pkg)
+            }
+        } catch (_: Exception) {
+        }
     }
 
     private fun completeAndStopService() {
-        handler.removeCallbacks(ticker)
+        handler.removeCallbacksAndMessages(null)
         prefs.clearAllActiveLocks()
         LockOverlayManager.removeOverlay()
+        MediaControlManager.restoreMediaAfterUnlock(this)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -206,7 +246,7 @@ class KidShieldTimerService : Service() {
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(ticker)
+        handler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
 

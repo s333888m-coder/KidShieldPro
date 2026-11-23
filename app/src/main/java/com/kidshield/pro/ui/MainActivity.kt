@@ -50,6 +50,7 @@ class MainActivity : FragmentActivity() {
     private var afterTimerMinutes by mutableIntStateOf(30)
     private var soundName by mutableStateOf("Default Alarm")
     private var antiUninstallGuard by mutableStateOf(true)
+    private var autoForceStopEnabled by mutableStateOf(true)
 
     private var hasOverlay by mutableStateOf(false)
     private var hasAccessibility by mutableStateOf(false)
@@ -104,6 +105,7 @@ class MainActivity : FragmentActivity() {
                     SettingsScreen(
                         afterTimerMinutes = afterTimerMinutes,
                         antiUninstallGuard = antiUninstallGuard,
+                        autoForceStopEnabled = autoForceStopEnabled,
                         hasOverlayPermission = hasOverlay,
                         hasAccessibilityPermission = hasAccessibility,
                         hasDeviceAdminPermission = hasDeviceAdmin,
@@ -116,6 +118,10 @@ class MainActivity : FragmentActivity() {
                         onToggleAntiUninstallGuard = { enabled ->
                             antiUninstallGuard = enabled
                             prefs.isAntiUninstallGuardEnabled = enabled
+                        },
+                        onToggleAutoForceStop = { enabled ->
+                            autoForceStopEnabled = enabled
+                            prefs.isAutoForceStopEnabled = enabled
                         },
                         onRequestOverlay = { requestOverlayPermission() },
                         onRequestAccessibility = { requestAccessibilityPermission() },
@@ -190,6 +196,7 @@ class MainActivity : FragmentActivity() {
         afterTimerMinutes = prefs.afterTimerProtectionMinutes
         soundName = prefs.customSoundName
         antiUninstallGuard = prefs.isAntiUninstallGuardEnabled
+        autoForceStopEnabled = prefs.isAutoForceStopEnabled
         refreshPermissionStates()
     }
 
