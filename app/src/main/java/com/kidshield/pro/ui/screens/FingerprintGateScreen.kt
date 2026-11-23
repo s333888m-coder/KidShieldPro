@@ -159,8 +159,7 @@ fun FingerprintGateScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "अंदर जाने के लिए फिंगरप्रिंट स्कैन करें
-(PIN लॉक बंद है • केवल फिंगरप्रिंट)",
+          text = "अंदर जाने के लिए फिंगरप्रिंट स्कैन करें\n(PIN लॉक बंद है • केवल फिंगरप्रिंट)",
                 color = TextSecondary,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
